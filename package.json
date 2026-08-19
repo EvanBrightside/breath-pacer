@@ -1,0 +1,14 @@
+{
+  "name": "breath-pacer",
+  "version": "1.0.0",
+  "description": "Guided breathing exercises for Zepp OS",
+  "main": "app.js",
+  "scripts": {
+    "test": "node test/breathing.test.mjs"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@zeppos/device-types": "^2.0.0"
+  }
+}

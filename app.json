@@ -1,0 +1,59 @@
+{
+  "configVersion": "v2",
+  "app": {
+    "appId": 1124048,
+    "appName": "Breath Pacer",
+    "appType": "app",
+    "version": {
+      "code": 1,
+      "name": "1.0.0"
+    },
+    "icon": "icon.png",
+    "vender": "ivanz",
+    "description": "Guided breathing exercises with haptic pacing. For relaxation only - not a medical device and not for diagnosis or treatment."
+  },
+  "permissions": [
+    "device:os.local_storage",
+    "data:user.hd.heart_rate"
+  ],
+  "runtime": {
+    "apiVersion": {
+      "compatible": "2.1.0",
+      "target": "2.1.0",
+      "minVersion": "2.1.0"
+    }
+  },
+  "targets": {
+    "390x450-amazfit-gts-4": {
+      "module": {
+        "page": {
+          "pages": [
+            "page/home",
+            "page/session",
+            "page/result"
+          ]
+        }
+      },
+      "platforms": [
+        {
+          "name": "Lille",
+          "deviceSource": 7995648
+        },
+        {
+          "name": "Lillew",
+          "deviceSource": 7995649
+        }
+      ],
+      "designWidth": 390
+    }
+  },
+  "i18n": {
+    "en-US": {
+      "appName": "Breath Pacer"
+    },
+    "ru-RU": {
+      "appName": "Ритм дыхания"
+    }
+  },
+  "defaultLanguage": "en-US"
+}

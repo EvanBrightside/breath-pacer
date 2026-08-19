@@ -1,0 +1,80 @@
+msgid "app_title"
+msgstr "Breath Pacer"
+
+msgid "no_sessions"
+msgstr "your first session"
+
+msgid "sessions"
+msgstr "sessions"
+
+msgid "min"
+msgstr "min"
+
+msgid "technique"
+msgstr "TECHNIQUE"
+
+msgid "duration"
+msgstr "DURATION, MIN"
+
+msgid "start"
+msgstr "Start"
+
+msgid "tech_box"
+msgstr "Box"
+
+msgid "tech_relax"
+msgstr "4-7-8"
+
+msgid "tech_coherent"
+msgstr "Coherent"
+
+msgid "tech_calm"
+msgstr "Calm"
+
+msgid "hint_box"
+msgstr "focus"
+
+msgid "hint_relax"
+msgstr "falling asleep"
+
+msgid "hint_coherent"
+msgstr "balance"
+
+msgid "hint_calm"
+msgstr "calm down"
+
+msgid "inhale"
+msgstr "Inhale"
+
+msgid "hold"
+msgstr "Hold"
+
+msgid "exhale"
+msgstr "Exhale"
+
+msgid "cycle"
+msgstr "cycle"
+
+msgid "stop"
+msgstr "Stop"
+
+msgid "paused"
+msgstr "Paused"
+
+msgid "done_title"
+msgstr "Session complete"
+
+msgid "cycles"
+msgstr "cycles"
+
+msgid "heart_rate"
+msgstr "HEART RATE"
+
+msgid "total"
+msgstr "Total"
+
+msgid "again"
+msgstr "Again"
+
+msgid "finish"
+msgstr "Done"

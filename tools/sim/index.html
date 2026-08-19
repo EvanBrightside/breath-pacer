@@ -1,0 +1,151 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Breathe device harness</title>
+<style>
+  body { margin:0; background:#2b2b2b; font:13px/1.4 monospace; color:#ddd;
+         display:flex; gap:24px; padding:24px; align-items:flex-start }
+  /* 390x450 with the GTS 4 corner radius; overflow hidden so clipping is visible. */
+  #screen { position:relative; width:390px; height:450px; background:#000;
+            border-radius:86px/86px; overflow:hidden; flex:none;
+            font-family:"DejaVu Sans",sans-serif; outline:2px solid #555 }
+  #report { white-space:pre-wrap; max-width:520px }
+  .bad { color:#ff6b6b } .ok { color:#6bff9b }
+</style>
+<script type="importmap">
+{ "imports": {
+  "@zos/ui": "/tools/sim/shim/ui.js",
+  "@zos/router": "/tools/sim/shim/router.js",
+  "@zos/display": "/tools/sim/shim/display.js",
+  "@zos/storage": "/tools/sim/shim/storage.js",
+  "@zos/sensor": "/tools/sim/shim/sensor.js",
+  "@zos/i18n": "/tools/sim/shim/i18n.js"
+} }
+</script>
+<script>
+  // Page()/App() are runtime globals on device, so they must exist before the
+  // page module body runs.
+  window.__page = null
+  window.Page = (def) => { window.__page = def; return def }
+  window.App = (def) => def
+</script>
+<div id="screen"></div>
+<pre id="report">loading…</pre>
+<script type="module">
+  import { mount, registry, statusBar } from '/tools/sim/shim/ui.js'
+  import { setCatalog } from '/tools/sim/shim/i18n.js'
+  import { localStorage as store } from '/tools/sim/shim/storage.js'
+  import { nav } from '/tools/sim/shim/router.js'
+  import { calls as displayCalls } from '/tools/sim/shim/display.js'
+  import { vibrations } from '/tools/sim/shim/sensor.js'
+
+  const qs = new URLSearchParams(location.search)
+  const statusBarHeight = Number(qs.get('statusbar') || 0)
+  const full = qs.get('full') === '1'   // render the whole scrollable page, not just the fold
+  const bare = qs.get('bare') === '1'   // frame only, transparent around it, for store assets
+  const scrollY = Number(qs.get('scroll') || 0)
+  if (bare) {
+    document.body.style.cssText = 'margin:0;padding:0;background:transparent'
+    document.getElementById('report').style.display = 'none'
+    document.getElementById('screen').style.outline = 'none'
+  }
+  const pageName = qs.get('page') || 'home'
+  const lang = qs.get('lang') || 'ru-RU'
+  const advance = Number(qs.get('advance') || 0)   // ms of simulated session time
+  const params = qs.get('params') || ''
+
+  function parsePo(text) {
+    const out = {}
+    let key = null
+    for (const line of text.split('\n')) {
+      let m = line.match(/^msgid\s+"(.*)"$/)
+      if (m) { key = m[1]; continue }
+      m = line.match(/^msgstr\s+"(.*)"$/)
+      if (m && key !== null) { out[key] = m[1]; key = null }
+    }
+    return out
+  }
+
+  const po = await (await fetch(`/page/i18n/${lang}.po`)).text()
+  setCatalog(parsePo(po))
+
+  // Seed persisted stats so screens can be captured with realistic numbers.
+  if (qs.has('sessions')) store.setItem('total_sessions', qs.get('sessions'))
+  if (qs.has('minutes')) store.setItem('total_minutes', qs.get('minutes'))
+
+  mount(document.getElementById('screen'))
+
+  await import(`/page/${pageName}.js`)
+  const def = window.__page
+
+  if (def.onInit) def.onInit.call(def, params)
+  def.build.call(def)
+
+  // Freeze the page's own timer first, otherwise it keeps advancing under
+  // Chromium's virtual clock and the captured frame is not the one requested.
+  if (def.stopTimer) def.stopTimer.call(def)
+  if (advance && def.render) {
+    def.elapsedMs = advance
+    def.render.call(def, advance)
+  }
+
+  if (scrollY) document.getElementById('stage').style.transform = `translateY(${-scrollY}px)`
+
+  // Draw the band only if the page left the status bar visible.
+  if (statusBarHeight && statusBar.visible) {
+    const band = document.createElement('div')
+    band.style.cssText = `position:absolute;left:0;top:0;width:390px;height:${statusBarHeight}px;` +
+      'background:repeating-linear-gradient(45deg,rgba(255,80,80,.35) 0 8px,transparent 8px 16px);' +
+      'border-bottom:1px solid rgba(255,80,80,.7);z-index:99;pointer-events:none'
+    document.getElementById('screen').appendChild(band)
+  }
+
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+
+  const W = 390, H = 450
+  const lines = []
+  const screenEl = document.getElementById('screen')
+  const screen = screenEl.getBoundingClientRect()
+  let hard = 0
+  let contentBottom = 0
+  const below = []
+
+  for (const w of registry) {
+    if (!w.__el) continue
+    const r = w.__el.getBoundingClientRect()
+    const x = Math.round(r.left - screen.left), y = Math.round(r.top - screen.top)
+    const x2 = Math.round(r.right - screen.left), y2 = Math.round(r.bottom - screen.top)
+    contentBottom = Math.max(contentBottom, y2)
+    const label = w.__state.text !== undefined ? JSON.stringify(String(w.__state.text)) : w.__type
+
+    // Horizontal overflow and anything above the top edge can never be reached
+    // by scrolling, so those are real layout bugs.
+    if (x < 0 || x2 > W || y < 0) {
+      hard++
+      lines.push(`CLIPPED   ${w.__type.padEnd(10)} ${label}  x:${x}..${x2} y:${y}..${y2}`)
+    } else if (y2 > H) {
+      below.push(label)
+    }
+  }
+
+  lines.push(`widgets: ${registry.length}`)
+  lines.push(`content height: ${contentBottom}px  (screen ${H}px)` +
+    (contentBottom > H ? ` -> page scrolls by ${contentBottom - H}px` : ' -> fits'))
+  lines.push(`clipped (unreachable): ${hard}`)
+  lines.push(`below the fold (reachable by scrolling): ${below.length}`)
+  lines.push(`status bar: ${statusBar.visible ? 'VISIBLE (overlaps page)' : 'hidden by page'}`)
+  lines.push(`display: ${JSON.stringify(displayCalls)}`)
+  lines.push(`vibrations: ${JSON.stringify(vibrations)}`)
+  lines.push(`nav: ${JSON.stringify(nav.calls)}`)
+
+  if (full && contentBottom > H) {
+    // Flattened scroll view: the watch's corner radius would falsely clip
+    // content that sits in the middle of the scrollable page.
+    screenEl.style.height = contentBottom + 'px'
+    screenEl.style.borderRadius = '24px'
+  }
+
+  window.__clipped = hard
+  document.getElementById('report').textContent = lines.join('\n')
+  window.__done = true
+  window.__outOfBounds = out
+</script>

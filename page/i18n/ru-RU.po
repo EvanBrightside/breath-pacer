@@ -1,0 +1,80 @@
+msgid "app_title"
+msgstr "Ритм дыхания"
+
+msgid "no_sessions"
+msgstr "первая сессия"
+
+msgid "sessions"
+msgstr "сессий"
+
+msgid "min"
+msgstr "мин"
+
+msgid "technique"
+msgstr "ТЕХНИКА"
+
+msgid "duration"
+msgstr "ДЛИТЕЛЬНОСТЬ, МИН"
+
+msgid "start"
+msgstr "Начать"
+
+msgid "tech_box"
+msgstr "Квадрат"
+
+msgid "tech_relax"
+msgstr "4-7-8"
+
+msgid "tech_coherent"
+msgstr "Когерентное"
+
+msgid "tech_calm"
+msgstr "Успокоение"
+
+msgid "hint_box"
+msgstr "концентрация"
+
+msgid "hint_relax"
+msgstr "засыпание"
+
+msgid "hint_coherent"
+msgstr "баланс"
+
+msgid "hint_calm"
+msgstr "успокоиться"
+
+msgid "inhale"
+msgstr "Вдох"
+
+msgid "hold"
+msgstr "Задержка"
+
+msgid "exhale"
+msgstr "Выдох"
+
+msgid "cycle"
+msgstr "цикл"
+
+msgid "stop"
+msgstr "Стоп"
+
+msgid "paused"
+msgstr "Пауза"
+
+msgid "done_title"
+msgstr "Сессия завершена"
+
+msgid "cycles"
+msgstr "циклов"
+
+msgid "heart_rate"
+msgstr "ПУЛЬС"
+
+msgid "total"
+msgstr "Всего"
+
+msgid "again"
+msgstr "Ещё раз"
+
+msgid "finish"
+msgstr "Готово"

@@ -1,126 +1,133 @@
-# Breath Pacer / Ритм дыхания
+# Breath Pacer
 
-Дыхательные практики для часов на Zepp OS. Круг на экране задаёт ритм, вибрация
-отмечает смену фаз — чтобы не приходилось смотреть на экран и можно было закрыть глаза.
+Breathing exercises for Zepp OS watches. A circle on the screen sets the pace and
+the watch buzzes on every phase change, so you can shut your eyes instead of
+staring at the display.
 
-Писалось под свой Amazfit GTS 4 (390×450, deviceSource 7995648 и 7995649).
-На других моделях не проверялось.
+Built for my own Amazfit GTS 4 (390×450, deviceSource 7995648 and 7995649).
+Not tested on anything else.
 
-В сеть приложение не ходит вообще: ни запросов, ни app-side-компонента. Всё,
-что оно насчитало, остаётся на часах.
+It never touches the network — no requests, no app-side component. Whatever it
+counts stays on the watch.
 
-| | | |
-|:--:|:--:|:--:|
-| <img src="store/ru/1-home.png" width="240" alt="Выбор техники"> | <img src="store/ru/3-inhale.png" width="240" alt="Сессия"> | <img src="store/ru/5-result.png" width="240" alt="Итог"> |
-| выбор техники | сессия | итог |
+[По-русски](README.ru.md)
 
-Кадры сняты со стенда `tools/sim`, а не с самих часов.
+| | | | | |
+|:--:|:--:|:--:|:--:|:--:|
+| <img src="store/en/1-home.png" width="170" alt="Techniques"> | <img src="store/en/2-start.png" width="170" alt="Duration"> | <img src="store/en/3-inhale.png" width="170" alt="Inhale"> | <img src="store/en/4-exhale.png" width="170" alt="Exhale"> | <img src="store/en/5-result.png" width="170" alt="Summary"> |
+| technique | duration | inhale | exhale | summary |
 
-## Как устроено
+Frames come from the `tools/sim` harness, not off the watch itself.
 
-Три экрана: `page/home.js` — выбор техники и длительности плюс общая статистика,
-`page/session.js` — сама сессия с анимацией, вибро и пульсом, `page/result.js` — итоги.
+## How it's put together
 
-Логика дыхательного цикла живёт отдельно, в `utils/breathing.js`, и намеренно не
-импортирует `@zos/*` — только ради того, чтобы её можно было гонять обычной нодой.
-Рядом `utils/constants.js` (техники, цвета, геометрия экрана) и `utils/store.js`
-(настройки и статистика в `localStorage`). Строки en-US и ru-RU — в `page/i18n/*.po`,
-манифест — `app.json`.
+Three screens: `page/home.js` picks the technique and duration and carries the
+running totals, `page/session.js` is the session itself with the animation,
+haptics and heart rate, `page/result.js` shows the summary.
 
-Техники сейчас четыре:
+The breathing cycle lives on its own in `utils/breathing.js` and deliberately
+doesn't import `@zos/*`, purely so it can run under plain Node. Next to it sit
+`utils/constants.js` (techniques, colours, screen geometry) and `utils/store.js`
+(settings and stats in `localStorage`). The en-US and ru-RU strings are in
+`page/i18n/*.po`, the manifest is `app.json`.
 
-| id | вдох-задержка-выдох-задержка | зачем |
+Four techniques so far:
+
+| id | inhale-hold-exhale-hold | what for |
 |---|---|---|
-| `box` | 4-4-4-4 | собраться |
-| `relax` | 4-7-8 | уснуть |
-| `coherent` | 5-0-5-0 | ровный фон |
-| `calm` | 4-0-6-0 | быстро успокоиться |
+| `box` | 4-4-4-4 | focus |
+| `relax` | 4-7-8 | falling asleep |
+| `coherent` | 5-0-5-0 | steady baseline |
+| `calm` | 4-0-6-0 | calm down fast |
 
-Нулевые задержки выкидываются, так что 4-7-8 крутится трёхшаговым циклом, а не четырёхшаговым.
+Zero holds get dropped, so 4-7-8 runs as a three-step cycle rather than a four-step one.
 
-## Разработка
+## Development
 
 ```bash
-npm test              # движок дыхания и валидация границ, 55 проверок
-zeus build            # .zab складывается в dist/
-zeus prune --ip       # обязательно, см. ниже
-zeus login            # аккаунтом Zepp, один раз
-zeus preview          # QR-код, сканировать в приложении Zepp на телефоне
+npm test              # breathing engine and bounds checks, 55 assertions
+zeus build            # .zab lands in dist/
+zeus prune --ip       # mandatory, see below
+zeus login            # with a Zepp account, once
+zeus preview          # QR code, scan it in the Zepp phone app
 ```
 
-Тесты гоняются обычной нодой, потому что `utils/breathing.js` и `utils/constants.js`
-не тянут `@zos/*`. Проверяется разбор паттернов, границы фаз, зацикливание,
-всякий мусор на входе (`NaN`, `±Infinity`, отрицательные, 400-значные числа,
-не-массивы), инвариант радиуса круга и зажим скачка системных часов.
+Tests run under plain Node because `utils/breathing.js` and `utils/constants.js`
+don't pull in `@zos/*`. They cover pattern parsing, phase boundaries, wrap-around,
+junk on the way in (`NaN`, `±Infinity`, negatives, 400-digit numbers, non-arrays),
+the circle-radius invariant and the system-clock jump clamp.
 
-Симулятора под Linux нет, так что проверять приходится на живых часах через
-`zeus preview`. Режим разработчика в приложении Zepp включается так: Профиль →
-несколько раз ткнуть в номер версии.
+There is no simulator for Linux, so checking anything means a real watch over
+`zeus preview`. Developer mode lives in the Zepp phone app: Profile, then tap the
+version number a few times.
 
-### Не забыть про `zeus prune --ip`
+### Don't forget `zeus prune --ip`
 
-Это главные грабли всего проекта. По умолчанию `.zab` тащит внутри `.ip-package` —
-обычный незашифрованный zip с полным исходником, включая `README.md` и `PRIVACY.md`.
-Распаковал и убедился: без prune пакет весит 55.6 КБ, после — 18.1 КБ, и внутри
-остаётся только байткод.
+The biggest trap in this project. By default the `.zab` carries an `.ip-package`
+inside — a plain unencrypted zip holding the entire source, `README.md` and
+`PRIVACY.md` included. I unpacked one to be sure: without prune the package is
+55.6 KB, after it 18.1 KB, and all that's left inside is bytecode.
 
-Отсюда простое правило: считать каталог проекта публикуемым. Всё, что сюда положено
-и не начинается с точки, уедет в Zepp следующей же сборкой, стоит забыть про prune.
+Which gives a simple rule: treat the project directory as publishable. Anything
+dropped here that doesn't start with a dot ships to Zepp on the next build, the
+one time you forget to prune.
 
-За это приходится платить: Zepp больше не сможет сам доадаптировать пакет под новые
-модели часов, сборку под каждую придётся делать руками.
+There is a price. Zepp can no longer re-adapt the package to new watch models on
+its own, so every model has to be built by hand.
 
-## Публикация
+## Publishing
 
-Приложение регистрируется на https://console.zepp.com/ через *Create App*, выданный
-appId прописывается в `app.json` (в шаблоне там стоит `21816`). Дальше `zeus build`,
-берём `.zab` из `dist/` и заливаем в консоль.
+Register the app at https://console.zepp.com/ under *Create App* and put the appId
+you get back into `app.json` (the template ships `21816`). Then `zeus build`, take
+the `.zab` out of `dist/` and upload it to the console.
 
-Что попросят заполнить:
+What the form asks for:
 
-- иконку 240×240 PNG с прозрачным фоном — лежит в корне как `store-icon-240.png`;
-- минимум три скриншота 360×360 PNG — каталог `store/`, генерируются стендом;
-- название и описание, en-US обязателен, ru-RU добавлен в `app.json`;
-- политику конфиденциальности — текст целиком в `PRIVACY.md`;
-- разрешения: пульс (`data:user.hd.heart_rate`) и локальное хранилище.
+- a 240×240 PNG icon on a transparent background, kept in the repo root as `store-icon-240.png`;
+- at least three 360×360 PNG screenshots, in `store/`, generated by the harness;
+- name and description, where en-US is required and ru-RU is already in `app.json`;
+- a privacy policy, full text in `PRIVACY.md`;
+- permissions: heart rate (`data:user.hd.heart_rate`) and local storage.
 
-Потом *Submit for Approval* и ждать, модерация занимает 1–5 рабочих дней. Все тексты
-для формы подачи собраны в `STORE.md`, чтобы не сочинять их заново каждый раз.
+Then *Submit for Approval* and wait, review takes one to five working days. All the
+copy for the submission form is collected in `STORE.md`, so none of it has to be
+written from scratch a second time.
 
-И в описании, и в `PRIVACY.md` намеренно оставлена оговорка, что это не медицинское
-устройство: пульс показывается справочно, не более.
+Both the store description and `PRIVACY.md` carry a deliberate disclaimer that this
+is not a medical device: heart rate is shown for reference and nothing more.
 
-Новая версия выкатывается через *Version Upgrade*, перед этим надо поднять
-`version.code` и `version.name` в `app.json`.
+A new version goes out through *Version Upgrade*, after bumping `version.code` and
+`version.name` in `app.json`.
 
-## Грабли, на которые уже наступили
+## Things that already went wrong
 
-Код прошёл через два ревью, AppSec и пентест. Вот что из этого осело в коде и что
-лучше не трогать:
+The code went through two reviews, AppSec and a pentest. Here is what settled into
+it as a result, and what is better left alone:
 
-- Дельта времени зажата через `MAX_DELTA_MS` в `page/session.js`. Прогресс считается
-  по `Date.now()`, и без зажима перевод часов, DST или поправка NTP посреди сессии
-  либо засчитывали её мгновенно, либо выдавали радиус круга −309 при допустимых
-  46…136 и вешали экран на час.
-- Пульсометр выключается первым делом в `onDestroy`, и каждый шаг очистки сидит в
-  своём `try/catch`. Иначе исключение где-нибудь в вызове дисплея оставляло
-  оптический датчик молотить уже после выхода из приложения.
-- У `pauseDropWristScreenOff` стоит конечная длительность, не `duration: 0`. Ноль
-  означает «до явного сброса», и упавшая страница оставила бы часы вообще без
-  системного гашения экрана.
-- `apiVersion` держим на 2.1.0. Код использует `pauseDropWristScreenOff`,
-  `resetDropWristScreenOff`, `onCurrentChange` и `offCurrentChange`, а они все
-  помечены `@version 2.1` в декларациях. Занизить до 2.0.0 не выйдет.
-- Оба замера пульса берутся из непрерывного режима. Раньше «до» приходило из
-  `getLast()` — то есть одиночный замер, возможно многочасовой давности, — а «после»
-  из `getCurrent()`, и разница двух разных режимов выводилась как результат сессии.
-- `validMinutes` стоит на обеих границах, и при чтении из хранилища, и при разборе
-  параметров роутера. Без неё отрицательное значение уменьшало счётчик минут, а
-  400-значное превращалось в `Infinity` и рисовало на экране `Infinity:NaN`.
+- The time delta is clamped through `MAX_DELTA_MS` in `page/session.js`. Progress is
+  measured off `Date.now()`, and without the clamp a clock change, DST or an NTP
+  correction mid-session either finished the session instantly or produced a circle
+  radius of −309 against a valid 46…136 and hung the screen for an hour.
+- The heart rate sensor is switched off first thing in `onDestroy`, and every cleanup
+  step sits in its own `try/catch`. Otherwise an exception somewhere in a display call
+  left the optical sensor measuring after the app had already exited.
+- `pauseDropWristScreenOff` gets a finite duration, never `duration: 0`. Zero means
+  "until explicitly reset", so a page that crashed would leave the watch with no
+  system screen-off at all.
+- `apiVersion` stays at 2.1.0. The code uses `pauseDropWristScreenOff`,
+  `resetDropWristScreenOff`, `onCurrentChange` and `offCurrentChange`, all of them
+  marked `@version 2.1` in the declarations. Dropping to 2.0.0 will not work.
+- Both heart rate readings come from continuous mode. The "before" figure used to
+  come from `getLast()`, a single sample possibly hours old, while "after" came from
+  `getCurrent()` — and the difference between two different modes was presented as
+  the result of the session.
+- `validMinutes` guards both ends, reading from storage and parsing router params.
+  Without it a negative value decremented the minute counter, and a 400-digit one
+  turned into `Infinity` and painted `Infinity:NaN` across the screen.
 
-## Другие модели часов
+## Other watch models
 
-Нужен ещё один ключ в `targets` вида `<ШхВ>-<модель>`, иконка в
-`assets/<тот же ключ>/icon.png` подходящего размера и `platforms` с `deviceSource`
-из базы Zeus — она лежит в `~/.zepp/.zeus_devices`. Координаты в коде считаются от
-`SCREEN_W` и `SCREEN_H` из `utils/constants.js`.
+You need another key in `targets` shaped `<WxH>-<model>`, an icon at
+`assets/<same key>/icon.png` in the matching size, and `platforms` with a
+`deviceSource` from the Zeus database in `~/.zepp/.zeus_devices`. Coordinates in the
+code are all derived from `SCREEN_W` and `SCREEN_H` in `utils/constants.js`.
